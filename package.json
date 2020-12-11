@@ -1,0 +1,75 @@
+{
+  "name": "simple-example",
+  "version": "1.0.0",
+  "description": "A FeathersJS Offline-first example application showcasing offline realtime support (own-data/own-net)",
+  "keywords": [
+    "feathers",
+    "offline",
+    "example",
+    "offline-first",
+    "realtime"
+  ],
+  "author": {
+    "name": "Feathersjs-offline contributors",
+    "email": "feathersjs-offline@hillerstrom.name",
+    "url": "https://github.com/feathersjs-offline/simple-example"
+  },
+  "homepage": "https://github.com/feathersjs-offline/simple-example#readme",
+  "license": "MIT",
+  "main": "app/example.js",
+  "directories": {
+    "lib": "lib",
+    "test": "tests"
+  },
+  "files": [
+    "lib"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "funding": {
+    "type": "opencollective",
+    "url": "https://opencollective.com/feathers"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/feathersjs-offline/simple-example"
+  },
+  "scripts": {
+    "prepublish": "npm run compile",
+    "compile": "shx rm -rf lib/ && tsc",
+    "test": "npm run compile && npm run mocha",
+    "mocha": "mocha --config ./.mocharc.ts.json --recursive test/**.test.js test/**/*.test.js"
+  },
+  "bugs": {
+    "url": "https://github.com/feathersjs-offline/simple-example/issues"
+  },
+  "dependencies": {
+    "@feathersjs/adapter-commons": "^4.5.7",
+    "@feathersjs/configuration": "^4.5.9",
+    "@feathersjs/errors": "^4.5.9",
+    "@feathersjs/express": "^4.5.9",
+    "@feathersjs/feathers": "^4.5.9",
+    "@feathersjs/socketio": "^4.5.9",
+    "@feathersjs/transport-commons": "^4.5.9",
+    "@feathersjs-offline/server": "^1.0.0",
+    "bufferutil": "^4.0.2",
+    "compression": "^1.7.4",
+    "cors": "^2.8.5",
+    "feathers-memory": "^4.1.0",
+    "helmet": "^4.1.1",
+    "serve-favicon": "^2.5.0",
+    "utf-8-validate": "^5.0.3",
+    "winston": "^3.3.3"
+  },
+  "devDependencies": {
+    "axios": "^0.21.0",
+    "eslint": "^7.12.1",
+    "mocha": "^8.2.0",
+    "nodemon": "^2.0.6",
+    "shx": "^0.3.3",
+    "sift": "^13.3.5",
+    "ts-node": "^9.0.0",
+    "typescript": "^4.0.5"
+  }
+}

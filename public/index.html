@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <title>A simple FeathersJS message generator application</title>
+  <meta name="description" content="A FeathersJS server">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+<!--
+  <meta http-equiv="Content-Security-Policy" content="
+      default-src 'self';
+      script-src 'report-sample' 'self';
+      style-src 'report-sample' 'self';
+      object-src 'none';
+      base-uri 'self';
+      connect-src 'self';
+      font-src 'self';
+      frame-src 'self';
+      img-src 'self';
+      manifest-src 'self';
+      media-src 'self';
+      report-uri https://5fb8d0a947ef7c02ddc10c35.endpoint.csper.io/;
+      worker-src 'none';
+  ">
+<meta http-equiv="Content-Security-Policy" content="
+    default-src      cdn.jsdelivr.net  'self' data: 'unsafe-inline' 'unsafe-eval';
+    script-src       cdn.jsdelivr.net  'self'       'unsafe-inline' 'unsafe-eval';
+    script-src-elem  cdn.jsdelivr.net  'self'       'unsafe-inline' 'unsafe-eval';
+    connect-src                        'self';
+  ">
+<meta http-equiv="Content-Security-Policy" content="
+default-src  * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
+script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
+">
+-->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feathers-chat@4.0.0/public/base.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feathers-chat@4.0.0/public/chat.css">
+</head>
+
+<body>
+  <style>
+    .reverse-order {
+      /* This can be used for showing messages in reversed order (we fetch in ascending date order but show in descending order) */
+      display: flex;
+      flex-direction: column-reverse;
+      overflow: scroll
+    }
+
+    .choice-bar {
+      background-color: #edf0f8;
+      border-radius: 3px;
+      padding: 4px
+    }
+
+    .message-box {
+      background-color: #eeeeee;
+      border-radius: 3px;
+      padding: 4px;
+      margin: 2px;
+      max-height: 200px;
+      min-height: 200px
+    }
+
+    .message div.clickable {
+      cursor: default;
+    }
+    .message div.clickable:hover {
+      cursor: pointer;
+      background-color: #0000ff4f;
+    }
+
+    .dim {
+      opacity: 0.2
+    }
+
+    .message {
+      font-size: 7pt;
+      padding: 4px;
+      background-color: #eeeeee
+    }
+
+    .message div:nth-child(even) {
+      /* Every even row has different background colour */
+      background-color: #dedede
+    }
+
+    /* The following are for temporarily indicating row changes */
+    .message div.green {
+      background-color: rgb(155, 219, 155)
+    }
+
+    .message div:nth-child(even).green {
+      background-color: rgb(155, 219, 155)
+    }
+
+    .message div.yellow {
+      background-color: rgb(229, 241, 113)
+    }
+
+    .message div:nth-child(even).yellow {
+      background-color: rgb(229, 241, 113)
+    }
+
+    .message div.red {
+      background-color: rgb(241, 147, 147)
+    }
+
+    .message div:nth-child(even).red {
+      background-color: rgb(241, 147, 147)
+    }
+
+    .overlay {
+      background-color:antiquewhite;
+      opacity:0.9;
+      z-index:1;
+      height:650px;
+      width:100%;
+      position:absolute;
+      display: none
+    }
+    label {
+      width: 35px;
+    }
+
+    button {
+      padding: 6px 14px;
+      border-radius: 3px;
+      border-style: hidden;
+      color: white;
+    }
+    button:hover {
+      opacity: .7;
+    }
+    button.alert {
+      background-color: orangered;
+    }
+    button.accept {
+      background-color: rgb(46, 231, 21);
+    }
+    button.neutral {
+      background-color: rgb(167, 165, 164);
+    }
+  </style>
+
+
+  <div class="container-full">
+
+    <!-- Header -->
+    <div class="row">
+      <div class="col-12 col-6-tablet push-3-tablet text-center heading">
+        <div><img class="logo" height="40px"  style="vertical-align: middle"
+            src="img/feathers-offline-first.svg"
+            alt="FeathersJS Offline-first Logo" />
+          <span  style="vertical-align: middle"><font size="+2">A simple Feathers Offline-first demo</font></span>
+        </div>
+        <hr style="margin-top:5px">
+        </hr>
+      </div>
+    </div>
+
+    <!-- Overlay -->
+    <div id="overlay" class="overlay">
+      <div style="margin-top:150px;margin-left:25%">
+        <label for="uuid">uuid:</label>
+        <input type="text" id="uuid" name="uuid" style="margin-left:49px" size="14" disabled><br>
+        <label for="text">text:</label>
+        <input type="text" id="text" name="text" style="margin-left:53px" size="70" autofocus selected><br>
+        <label for="updateAt">updatedAt:</label>
+        <input type="text" id="updatedAt" name="updateAt" style="margin-left:5px" size="24" disabled><br>
+        <label for="onServerAt">onServerAt:</label>
+        <input type="text" id="onServerAt" name="onServerAt" style="margin-left:0px" size="24" disabled>
+        <br>
+        <div style="text-align:right;margin-top:20px">
+          <button id="delete" class="alert" onclick="hidePopup();rowDelete()" style="margin-right:40px">Delete</button>
+          <button id="update" class="accept" onclick="hidePopup();rowUpdate()" style="margin-right:15px">Update</button>
+          <button class="neutral" onclick="hidePopup()" style="margin-right:25%">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interface choice -->
+    <div class="row">
+      <div class="col-8 push-2 choice-bar">
+        &nbsp;&nbsp;
+        <input type="radio" id="standard" name="mode" value="standard">
+        <label for="standard">Standard FeathersJS</label>&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="radio" id="owndata" name="mode" value="owndata">
+        <label for="owndata">Offline realtime own-data</label>&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="radio" id="ownnet" name="mode" value="ownnet">
+        <label for="ownnet">Offline realtime own-net</label>
+      </div>
+    </div>
+
+    <!-- Connection status -->
+    <div class="row">
+      <div class="col-3 push-2 choice-bar">
+        &nbsp;&nbsp;
+        <input type="radio" id="online" name="connection" value="online">
+        <label for="online">Online</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+        <input type="radio" id="offline" name="connection" value="offline">
+        <label for="offline">Offline</label>
+      </div>
+      <div class="col-3 push-1 text-right choice-bar">
+        <font size="-1">
+          <label for="speed" style="padding-bottom:-2px">Animation speed</label>
+          <input type="range" id="speed" value="800" min="0" max="1800">
+        </font>
+      </div>
+      <div class="col-2 push-1 text-right">
+        <font size="-1"><button type="button" class="neutral" id="sync">Force sync</button></font>
+      </div>
+      <div class="col-2 push-1 text-right">
+        <font size="-1"><button type="button" class="alert" onclick="resetAll()">Reset all</button></font>
+      </div>
+    </div>
+
+    <!-- Add message button -->
+    <div class="row">
+      <div class="col-12 col-6-tablet push-3-tablet col-4-desktop push-4-desktop">
+        <button type="button" id="add" class="button button-primary block" style="margin: auto">
+          Add Message
+        </button>
+      </div>
+    </div>
+
+    <!-- The "Console" -->
+    <div class="row">
+      <div class="col-12 col-6-tablet push-3-tablet text-center heading">
+        Messages
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Client window -->
+      <div id="clientName" class="col-1" style="padding-right:5px;text-align:right">client</div>
+      <div id="client" class="col-5 reverse-order message-box message">
+        <div>
+          ...at least not yet! (client)
+        </div>
+        <div>
+          This mini app is not initialized correctly
+        </div>
+      </div>
+
+      <!-- Server window -->
+      <div id="server" class="col-5 reverse-order message-box message">
+        <div>
+          ...at least not yet! (server)
+        </div>
+        <div>
+          This mini app is not initialized correctly
+        </div>
+      </div>
+      <div id="serverName"  style="padding-left:5px;">&nbsp;server</div>
+    </div>
+
+    <div class="row">
+      <!-- Client Queue window -->
+      <div id="queueName" class="col-1" style="padding-right:5px;text-align:right">queue</div>
+      <div id="queue" class="col-5 reverse-order message-box message">
+        <div>
+          ...at least not yet! (queue)
+        </div>
+        <div>
+          This mini app is not initialized correctly
+        </div>
+      </div>
+
+      <!-- Hints on how to use it -->
+      <div id="hints" class="col-5 message-box message" style="background-color:#cecece">
+        <ul>
+          <li><b>Make sure you start the server (command: node server)</b></li>
+          <li>At the top you select the strategy to visualize/demo and if you want to simulate online or offline (and switch back and forth). "Animation speed" adjusts the speed of the animations of changes.</li>
+          <li>"Add Message", "Force Sync", and "Reset all" does just that.</li>
+          <li>Messages can be detailed and edited (server/client) by clicking in the relevant window (all).</li>
+          <li>Color legend: <b>created</b> -> <b style="background-color: rgb(155, 219, 155)">green</b>, <b>removed</b> -> <b style="background-color: rgb(241, 147, 147)">red</b>, <b>patched</b> -> <b style="background-color: rgb(229, 241, 113)">yellow</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/regenerator-runtime@0.13.1"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@feathersjs/client@4.5.8/dist/feathers.min.js""></script>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client"></script>
+  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2.3.0/dist/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@feathersjs-offline/client@0.4.0/dist/feathersjs-offline-client.min.js"></script>
+  <script defer="defer" src="./app.js"></script>
+</body>
+
+</html>

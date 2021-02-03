@@ -1,5 +1,5 @@
-let DEBUG = false;
-const fodebug = (...args) => {if (DEBUG) console.log(...args)};
+let DEBUG = true;
+const fodebug= (...args) => {if (DEBUG) console.log(...args)};
 
 // Make sure the feathersjs-offline wrappers for own-data, own-net, and server are available
 /* eslint-disable no-undef */
@@ -49,10 +49,13 @@ let speed = 800;
 // Create Feathers client
 const app = feathers();
 window.app = app;
-const ioLocation = "http://localhost:3030";
+app.mixins.push((service, path) => {
+  fodebug(`mixin called for '${path}' and service`);
+});
+const ioLocation = "http://localhost:3031";
 const socket = io(ioLocation);
-fodebug(`connecting to: ${ioLocation}...`);
 
+fodebug(`Connecting to: ${ioLocation}...`);
 app.configure(feathers.socketio(socket));
 
 
@@ -87,8 +90,11 @@ async function prepareService () {
   // Remove/forget any prior registered service on path (this is a hack I know)
   delete app.services[serviceName];
 
+  fodebug(`mixins[0] = ${app.mixins[0].toString()}`);
   // Set-up default service
   app.service(serviceName);
+  let test1 = app.service('dumb');
+  let test2 = app.use('dummy', new class { setup() {}})
 
   // Register service path with correct wrapper (no-op for standard)
   if (serviceType !== 'standard') {
@@ -112,11 +118,12 @@ async function prepareService () {
   addListeners(app, app.service(serviceName).local, 'client');
   addListeners(app, app.service(serviceName).queue, 'queue');
 
-  // remote.timeout = 300;  // only here to force quicker return from remote (better experience for this demo)
+  app.service(serviceName).on('created', (message) => {
+    console.log(`from Server: ${JSON.stringify(message)}`);
+  })
 
-  if (typeof app.service(serviceName).sync !== 'undefined') {
-    await app.service(serviceName).sync();
-  }
+  // Sync data - if available
+  app.service(serviceName).sync && await app.service(serviceName).sync();
 
   // Install hook for handling simulation of online/offline
   remote.hooks({
@@ -135,50 +142,36 @@ prepareService(); // Setup service at load/reload and at users choice
 
 
 function getServiceData() {
+  function displayRows(parentId, service) {
+    service.find()
+    .then(res => {
+      res.forEach(r => showMessage(parentId, r))
+    })
+    .catch(err => {
+      alert(`Could not read messages from ${parentId} '${serviceName}'! err=${err.name}, ${err.message}}`)
+    });
+  }
+
   // Get data from server and display
   clearContents();
   if (serviceType !== 'standard') {
     dim(['client', 'clientName','queue', 'queueName'], false);
 
     // Get and show items from remoteService
-    app.service(serviceName).remote.find()
-      .then(res => {
-        res.forEach(r => showMessage('server', r))
-      })
-      .catch(err => {
-        alert(`Could not read messages from remoteService '${serviceName}'! err=${err.name}, ${err.message}}`)
-      });
+    displayRows('server', app.service(serviceName).remote);
 
     // Get and show items from localService
-    app.service(serviceName).local.find()
-      .then(res => {
-        res.forEach(r => showMessage('client', r))
-      })
-      .catch(err => {
-        alert(`Could not read messages from localService '${localServiceName}'! err=${err.name}, ${err.message}}`)
-      });
+    displayRows('client', app.service(serviceName).local);
 
     // Get and show items from localQueue
-    app.service(serviceName).queue.find()
-      .then(res => {
-        res.forEach(r => showMessage('queue', r))
-      })
-      .catch(err => {
-        alert(`Could not read messages from localQueue '${localQueueName}'! err=${err.name}, ${err.message}}`)
-      });
+    displayRows('queue', app.service(serviceName).queue);
   }
   else {
     // LocalService and localQueue are not relevant for 'standard' so we dim them
     dim(['client', 'clientName','queue', 'queueName'], true);
 
     // Get and show items from remoteService (in this case the ordinary service)
-    app.service(serviceName).find()
-      .then(res => {
-        res.forEach(r => showMessage('server', r))
-      })
-      .catch(err => {
-        alert(`Could not read messages from Service '${serviceName}'! err=${err.name}, ${err.message}}`)
-      });
+    displayRows('server', app.service(serviceName));
   }
 
 };
@@ -279,6 +272,7 @@ async function nextChange (id) {
 }
 
 function getNodeId (parentId, message) {
+  fodebug(`getNodeId('${parentId}', '${JSON.stringify(message)}')`);
   let uuid = message.uuid || message.record.uuid;
   let nodeId = parentId + '-' + uuid;
   if (parentId === 'queue') nodeId += '-' + message.id;

@@ -7,7 +7,7 @@
 ## Installation
 
 ``` bash
-git clone https://github.com/feathersjs-offline/example
+git clone https://github.com/feathersjs-offline/simple-example
 ```
 
 ## Documentation
@@ -22,7 +22,7 @@ This collection of packages i interesting due to to mainly two things:
 After cloning the repository execute
 
 ``` bash
-cd feathersjs-offline/example
+cd feathersjs-offline/simple-example
 npm install
 ```
 This will take a couple of minutes. When this has completed successfully you start the server by executing

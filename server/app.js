@@ -26,6 +26,13 @@ app.use(compress());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(favicon(path.join(app.get('public'), 'favicon.ico')));
+
+// Add middleware to add header for CSP
+app.use('/', function(req, res, next) {
+  res.setHeader("Content-Security-Policy", `img-src 'self'; child-src 'self'; style-src 'unsafe-inline' https://cdn.jsdelivr.net 'self'; default-src 'self'; script-src 'self' 'unsafe-inline'; script-src-elem https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'self';`);
+  next();
+});
+
 // Host the public folder
 app.use('/', express.static(app.get('public')));
 

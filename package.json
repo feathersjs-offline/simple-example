@@ -45,7 +45,7 @@
     "url": "https://github.com/feathersjs-offline/simple-example/issues"
   },
   "dependencies": {
-    "@feathersjs-offline/server": "^1.0.6",
+    "@feathersjs-offline/server": "^1.0.8",
     "@feathersjs/adapter-commons": "^4.5.7",
     "@feathersjs/configuration": "^4.5.9",
     "@feathersjs/errors": "^4.5.9",

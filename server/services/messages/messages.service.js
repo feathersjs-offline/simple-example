@@ -3,7 +3,6 @@ const { Messages } = require('./messages.class');
 const hooks = require('./messages.hooks');
 
 const { realtimeWrapper } = require('@feathersjs-offline/server');
-console.log(`typeof realtimeWrapper = ${typeof realtimeWrapper}`);
 
 module.exports = function (app) {
   const options = {
@@ -12,7 +11,6 @@ module.exports = function (app) {
     id: 'uuid'
   };
 
-  // console.dir(Messages);
 
   // Initialize our service with any options it requires
   app.use('messages', new Messages(options, app));

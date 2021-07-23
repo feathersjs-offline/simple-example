@@ -2,38 +2,13 @@
 <html lang="en">
 
 <head>
-  <title>A simple FeathersJS message generator application</title>
   <meta name="description" content="A FeathersJS server">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-<!--
-  <meta http-equiv="Content-Security-Policy" content="
-      default-src 'self';
-      script-src 'report-sample' 'self';
-      style-src 'report-sample' 'self';
-      object-src 'none';
-      base-uri 'self';
-      connect-src 'self';
-      font-src 'self';
-      frame-src 'self';
-      img-src 'self';
-      manifest-src 'self';
-      media-src 'self';
-      report-uri https://5fb8d0a947ef7c02ddc10c35.endpoint.csper.io/;
-      worker-src 'none';
-  ">
-<meta http-equiv="Content-Security-Policy" content="
-    default-src      cdn.jsdelivr.net  'self' data: 'unsafe-inline' 'unsafe-eval';
-    script-src       cdn.jsdelivr.net  'self'       'unsafe-inline' 'unsafe-eval';
-    script-src-elem  cdn.jsdelivr.net  'self'       'unsafe-inline' 'unsafe-eval';
-    connect-src                        'self';
-  ">
-<meta http-equiv="Content-Security-Policy" content="
-default-src  * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
-script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
-">
--->
+
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feathers-chat@4.0.0/public/base.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/feathers-chat@4.0.0/public/chat.css">
+
+  <title>A simple FeathersJS message generator application</title>
 </head>
 
 <body>
@@ -45,12 +20,6 @@ script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
       overflow: scroll
     }
 
-    .choice-bar {
-      background-color: #edf0f8;
-      border-radius: 3px;
-      padding: 4px
-    }
-
     .message-box {
       background-color: #eeeeee;
       border-radius: 3px;
@@ -59,7 +28,6 @@ script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
       max-height: 200px;
       min-height: 200px
     }
-
     .message div.clickable {
       cursor: default;
     }
@@ -77,7 +45,6 @@ script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
       padding: 4px;
       background-color: #eeeeee
     }
-
     .message div:nth-child(even) {
       /* Every even row has different background colour */
       background-color: #dedede
@@ -87,38 +54,82 @@ script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
     .message div.green {
       background-color: rgb(155, 219, 155)
     }
-
     .message div:nth-child(even).green {
       background-color: rgb(155, 219, 155)
     }
-
     .message div.yellow {
       background-color: rgb(229, 241, 113)
     }
-
     .message div:nth-child(even).yellow {
       background-color: rgb(229, 241, 113)
     }
-
     .message div.red {
       background-color: rgb(241, 147, 147)
     }
-
     .message div:nth-child(even).red {
       background-color: rgb(241, 147, 147)
     }
 
     .overlay {
       background-color:antiquewhite;
-      opacity:0.9;
-      z-index:1;
+      opacity:0.95;
+      z-index:1000;
       height:650px;
       width:100%;
       position:absolute;
       display: none
     }
-    label {
-      width: 35px;
+
+    .radio-buttons {
+      list-style-type: none;
+      margin: 0 0 0 0;
+      padding: 0;
+    }
+    .radio-buttons li {
+      float: left;
+      margin: 0 -2px 0 0;
+      width: 150px;
+      height: 35px;
+      position: relative;
+    }
+    .radio-buttons label,
+    .radio-buttons input {
+      display: block;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+    }
+    .radio-buttons input[type="radio"] {
+      opacity: 0.01;
+      z-index: 10;
+    }
+    .radio-buttons input[type="radio"]:checked+label,
+    .Checked+label {
+      background: rgb(2, 211, 2);
+    }
+    .radio-buttons input[type="radio"][red]:checked+label,
+    .Checked+label {
+      background: rgb(245, 95, 120);
+    }
+    .radio-buttons label {
+      text-align: center;
+      padding: 5px;
+      border: 2px solid #CCC;
+      cursor: pointer;
+      z-index: 9;
+    }
+    .radio-buttons li:first-child label {
+      border-top-left-radius: 8px;
+      border-bottom-left-radius: 8px;
+    }
+    .radio-buttons li:last-child label {
+      border-top-right-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+    .radio-buttons label:hover {
+      background: rgb(226, 238, 217);
     }
 
     button {
@@ -179,38 +190,51 @@ script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
 
     <!-- Interface choice -->
     <div class="row">
-      <div class="col-8 push-2 choice-bar">
-        &nbsp;&nbsp;
-        <input type="radio" id="standard" name="mode" value="standard">
-        <label for="standard">Standard FeathersJS</label>&nbsp;&nbsp;&nbsp;&nbsp;
-        <input type="radio" id="owndata" name="mode" value="owndata">
-        <label for="owndata">Offline realtime own-data</label>&nbsp;&nbsp;&nbsp;&nbsp;
-        <input type="radio" id="ownnet" name="mode" value="ownnet">
-        <label for="ownnet">Offline realtime own-net</label>
+      <div class="col-6 push-1" style="font-size:70%;font-weight:900">
+        <div class="col-12">
+          <ul class="radio-buttons">
+            <li>
+              <input type="radio" id="standard" name="mode" value="standard" checked/>
+              <label for="standard">Standard FeathersJS</label>
+            </li>
+            <li>
+              <input type="radio" id="owndata" name="mode" value="owndata"/>
+              <label for="owndata">Offline realtime own-data</label>
+            </li>
+            <li>
+              <input type="radio" id="ownnet" name="mode" value="ownnet"/>
+              <label for="ownnet">Offline realtime own-net</label>
+            </li>
+          </ul>
+        </div>
+      </div>
+      <div class="col-3 push-1 text-right" style="font-size:70%;font-weight:900">
+        <button type="button" class="neutral" id="sync">Force sync</button></font>
+        <button type="button" class="alert" onclick="resetAll()">Reset all</button></font>
       </div>
     </div>
-
+      
     <!-- Connection status -->
     <div class="row">
-      <div class="col-3 push-2 choice-bar">
-        &nbsp;&nbsp;
-        <input type="radio" id="online" name="connection" value="online">
-        <label for="online">Online</label>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
-        <input type="radio" id="offline" name="connection" value="offline">
-        <label for="offline">Offline</label>
+      <div class="col-7 push-1"  style="font-size:70%;font-weight:900">
+        <div class="col-7">
+        <ul class="radio-buttons">
+          <li>
+            <input type="radio" id="online" name="connection" value="online">
+            <label for="online">Online</label>
+          </li>
+          <li>
+            <input type="radio" id="offline" red name="connection" value="offline">
+            <label for="offline">Offline</label>
+          </li>
+        </ul>
       </div>
-      <div class="col-3 push-1 text-right choice-bar">
-        <font size="-1">
-          <label for="speed" style="padding-bottom:-2px">Animation speed</label>
-          <input type="range" id="speed" value="800" min="0" max="1800">
-        </font>
+    </div>
+      <div class="col-4 text-center" style="margin-top:5px;font-size:70%;font-weight:900">
+        <label for="speed" >Anim. speed</label>
+        <input type="range" id="speed" value="800" min="0" max="1800">
       </div>
-      <div class="col-2 push-1 text-right">
-        <font size="-1"><button type="button" class="neutral" id="sync">Force sync</button></font>
-      </div>
-      <div class="col-2 push-1 text-right">
-        <font size="-1"><button type="button" class="alert" onclick="resetAll()">Reset all</button></font>
-      </div>
+    </div>
     </div>
 
     <!-- Add message button -->
@@ -231,7 +255,7 @@ script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
 
     <div class="row">
       <!-- Client window -->
-      <div id="clientName" class="col-1" style="padding-right:5px;text-align:right">client</div>
+      <div id="clientName" class="col-1" style="padding-right:5px;text-align:right">client<br>(local)</div>
       <div id="client" class="col-5 reverse-order message-box message">
         <div>
           ...at least not yet! (client)
@@ -250,7 +274,7 @@ script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
           This mini app is not initialized correctly
         </div>
       </div>
-      <div id="serverName"  style="padding-left:5px;">&nbsp;server</div>
+      <div id="serverName"  style="padding-left:5px;">&nbsp;server<br>&nbsp;(remote)</div>
     </div>
 
     <div class="row">
@@ -279,10 +303,9 @@ script-src * data: blob: filesystem: 'unsafe-inline' 'unsafe-eval';
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/regenerator-runtime@0.13.1"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@feathersjs/client@4.5.8/dist/feathers.min.js""></script>
-  <script src="https://cdn.jsdelivr.net/npm/socket.io-client"></script>
-  <script src="https://cdn.jsdelivr.net/npm/socket.io-client@2.3.0/dist/socket.io.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@feathersjs-offline/client@0.4.0/dist/feathersjs-offline-client.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@feathersjs/client@4.5.8/dist/feathers.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.3.0/socket.io.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@feathersjs-offline/client@1.0.8/dist/feathersjs-offline-client.min.js"></script>
   <script defer="defer" src="./app.js"></script>
 </body>
 

@@ -1,6 +1,6 @@
 {
   "name": "simple-example",
-  "version": "1.0.0",
+  "version": "1.0.4",
   "description": "A FeathersJS Offline-first example application showcasing offline realtime support (own-data/own-net)",
   "keywords": [
     "feathers",
@@ -18,11 +18,11 @@
   "license": "MIT",
   "main": "app/example.js",
   "directories": {
-    "lib": "lib",
+    "lib": "server",
     "test": "tests"
   },
   "files": [
-    "lib"
+    "server"
   ],
   "publishConfig": {
     "access": "public"
@@ -45,6 +45,7 @@
     "url": "https://github.com/feathersjs-offline/simple-example/issues"
   },
   "dependencies": {
+    "@feathersjs-offline/server": "^1.0.8",
     "@feathersjs/adapter-commons": "^4.5.7",
     "@feathersjs/configuration": "^4.5.9",
     "@feathersjs/errors": "^4.5.9",
@@ -52,7 +53,6 @@
     "@feathersjs/feathers": "^4.5.9",
     "@feathersjs/socketio": "^4.5.9",
     "@feathersjs/transport-commons": "^4.5.9",
-    "@feathersjs-offline/server": "^1.0.0",
     "bufferutil": "^4.0.2",
     "compression": "^1.7.4",
     "cors": "^2.8.5",

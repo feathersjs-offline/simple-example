@@ -9,8 +9,7 @@ module.exports = function (app) {
     app.channel('offlineRealtimeDemo').join(connection);
   });
 
-  // eslint-disable-next-line no-unused-vars
-  app.publish((data, hook) => {
+  app.publish((_data, _hook) => {
     return app.channel('offlineRealtimeDemo');
   });
 };

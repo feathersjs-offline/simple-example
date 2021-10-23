@@ -2,7 +2,7 @@
 const assert = require('assert');
 const axios = require('axios');
 const url = require('url');
-const app = require('../server');
+const app = require('../server/app');
 
 const port = app.get('port') || 8998;
 const getUrl = pathname => url.format({

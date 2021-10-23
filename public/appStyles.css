@@ -1,0 +1,160 @@
+.reverse-order {
+  /* This can be used for showing messages in reversed order (we fetch in ascending date order but show in descending order) */
+  display: flex;
+  flex-direction: column-reverse;
+  overflow: scroll
+}
+
+.message-header {
+  background-color: #ffffff;
+  font-size: 7pt;
+  font-family: "Courier New", Courier, monospace;
+  white-space: pre;
+  font-weight:bold;
+  text-align: left;
+  margin-bottom: -10px;
+  margin-left: -8px;
+  padding-bottom: 0
+}
+
+.message-box {
+  background-color: #eeeeee;
+  border-radius: 3px;
+  padding: 4px;
+  margin: 2px;
+  max-height: 200px;
+  min-height: 200px;
+  overflow: auto
+}
+.message-description {
+  font-family: Arial, Helvetica, sans-serif !important;
+}
+.message div.clickable {
+  cursor: default;
+}
+.message div.clickable:hover {
+  cursor: pointer;
+  background-color: #0000ff4f !important;
+}
+
+.dim {
+  opacity: 0.2
+}
+
+.name {
+  font-size: 80%;
+  line-height: 95%;
+}
+
+.message {
+  font-family: "Courier New", Courier, monospace;
+  /* white-space: pre; */
+  font-size: 7pt;
+  padding: 4px;
+  background-color: #eeeeee
+}
+.message div.clickable:nth-child(even) {
+  /* Every even row has different background colour */
+  background-color: #dedede
+}
+
+/* The following are for temporarily indicating row changes */
+.message div.green {
+  background-color: rgb(155, 219, 155)
+}
+.message div:nth-child(even).green {
+  background-color: rgb(155, 219, 155)
+}
+.message div.yellow {
+  background-color: rgb(229, 241, 113)
+}
+.message div:nth-child(even).yellow {
+  background-color: rgb(229, 241, 113)
+}
+.message div.red {
+  background-color: rgb(241, 147, 147)
+}
+.message div:nth-child(even).red {
+  background-color: rgb(241, 147, 147)
+}
+
+.overlay {
+  background-color:antiquewhite;
+  opacity:0.95;
+  z-index:1000;
+  height:650px;
+  width:100%;
+  position:absolute;
+  display: none
+}
+
+.radio-buttons {
+  list-style-type: none;
+  margin: 0 0 0 0;
+  padding: 0
+}
+.radio-buttons li {
+  float: left;
+  margin: 0 -2px 0 0;
+  width: 150px;
+  height: 35px;
+  position: relative
+}
+.radio-buttons label,
+.radio-buttons input {
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0
+}
+.radio-buttons input[type="radio"] {
+  opacity: 0.01;
+  z-index: 10
+}
+.radio-buttons input[type="radio"]:checked+label,
+.Checked+label {
+  background: rgb(2, 211, 2)
+}
+.radio-buttons input[type="radio"][red]:checked+label,
+.Checked+label {
+  background: rgb(245, 95, 120)
+}
+.radio-buttons label {
+  text-align: center;
+  padding: 5px;
+  border: 2px solid #CCC;
+  cursor: pointer;
+  z-index: 9
+}
+.radio-buttons li:first-child label {
+  border-top-left-radius: 8px;
+  border-bottom-left-radius: 8px
+}
+.radio-buttons li:last-child label {
+  border-top-right-radius: 8px;
+  border-bottom-right-radius: 8px
+}
+.radio-buttons label:hover {
+  background: rgb(226, 238, 217)
+}
+
+button {
+  padding: 6px 14px;
+  border-radius: 3px;
+  border-style: hidden;
+  color: white
+}
+button:hover {
+  opacity: .7
+}
+button.alert {
+  background-color: orangered
+}
+button.accept {
+  background-color: rgb(46, 231, 21)
+}
+button.neutral {
+  background-color: rgb(167, 165, 164)
+}

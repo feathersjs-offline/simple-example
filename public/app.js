@@ -1,4 +1,4 @@
-let DEBUG = true;
+let DEBUG = false;
 const fodebug= (...args) => {if (DEBUG) console.log(...args)};
 
 // Make sure the feathersjs-offline wrappers for own-data, own-net, and server are available
@@ -49,9 +49,6 @@ let speed = 800;
 // Create Feathers client
 const app = feathers();
 window.app = app;
-app.mixins.push((service, path) => {
-  fodebug(`mixin called for '${path}' and service`);
-});
 const ioLocation = "http://localhost:3031";
 const socket = io(ioLocation);
 
@@ -70,6 +67,17 @@ const serviceWrapper = {
   'ownnet': feathersjsOfflineClient.ownnetWrapper
 }
 
+const validStorage = ['websql', 'indexeddb', 'localstorage'];
+
+let regex = new RegExp('[?&]db=([^&#]*)|&|#|$');
+let dbs = (regex.exec(window.location.href))[1].split(',');
+
+const ok = dbs.reduce((total, db) => {
+  total += validStorage.includes(db.toLowerCase()) ? 1 : 0;
+  return total;
+}, 0);
+if (ok !== dbs.length)
+  alert(`Unknown storage type specified in url search parameter:\n\n'${ioLocation}/?db=${dbs.join(',')}'\n\nPlease use one (or more) of 'websql', 'indexeddb', or 'localstorage' (separate with comma).`);
 
 // Setup service according to users choice
 async function prepareService () {
@@ -87,29 +95,27 @@ async function prepareService () {
     }
   }
 
-  // Remove/forget any prior registered service on path (this is a hack I know)
+  // Remove/forget any prior registered service on path (this is a hack - I know)
   delete app.services[serviceName];
 
-  fodebug(`mixins[0] = ${app.mixins[0].toString()}`);
   // Set-up default service
   app.service(serviceName);
-  let test1 = app.service('dumb');
-  let test2 = app.use('dummy', new class { setup() {}})
 
   // Register service path with correct wrapper (no-op for standard)
   if (serviceType !== 'standard') {
+    console.error(`dbs=${JSON.stringify(dbs)}`);
     serviceWrapper[serviceType](app, serviceName, {
       id: 'uuid', // We use 'uuid' as our key
-      storage: sessionStorage, // We want to force sessionStorage so you can run several demo apps
-                               // in the same browser. By default localStorage (or file for NodeJS) is used
-      store: sessionStorage.getItem(localServiceName), // Initialize with (possibly) stored data
+      storage: dbs, // We want to use the type from the query variable 'db' so you can run several
+                    // demo apps in the same browser. By default localStorage is used
       fixedName: localPrefix, // Keep same name for local service and queue (only advisable for demo)
-      reuseKeys: true, // Inform 'feathers-localstorage' that we know what we are doing reusing the keys
-      multi:true
+      reuseKeys: true, // Inform '@feathersjs-offline/localforage' that we know we are reusing the keys
+      multi: true,
+      dates: false
     });
   }
 
-  // Force initialization of service (somewhat a tricky trick)
+  // Force initialization of service (a somewhat tricky trick)
   await app.service(serviceName).patch(null, {}, {query: {UnknownTag: 'This is only to ensure initialization of the service'}});
 
   // Register event handlers and attach hooks
@@ -118,18 +124,21 @@ async function prepareService () {
   addListeners(app, app.service(serviceName).local, 'client');
   addListeners(app, app.service(serviceName).queue, 'queue');
 
-  app.service(serviceName).on('created', (message) => {
+  remote.on('created', (message) => {
     console.log(`from Server: ${JSON.stringify(message)}`);
   })
-
-  // Sync data - if available
-  app.service(serviceName).sync && await app.service(serviceName).sync();
 
   // Install hook for handling simulation of online/offline
   remote.hooks({
     before: {
       all: async context => {
-        if (connectStatus === 'offline') {
+        // if query contains {force: true} we do not simulate offline behaviour
+        const { params = {} } = context;
+        const { query = {} } = params;
+        const { force = false, ...rest } = query;
+        context.params.query = rest;
+  
+        if (connectStatus === 'offline' && !force) {
           throw new feathers.errors.Timeout('Fail requested by user - simulated timeout/missing connection');
         } else {
             return context;
@@ -137,6 +146,8 @@ async function prepareService () {
       }
     }
   });
+
+  getServiceData(); // Get data at load/reload
 };
 prepareService(); // Setup service at load/reload and at users choice
 
@@ -144,18 +155,18 @@ prepareService(); // Setup service at load/reload and at users choice
 function getServiceData() {
   function displayRows(parentId, service) {
     service.find()
-    .then(res => {
-      res.forEach(r => showMessage(parentId, r))
-    })
-    .catch(err => {
-      alert(`Could not read messages from ${parentId} '${serviceName}'! err=${err.name}, ${err.message}}`)
-    });
+      .then(res => {
+        res.forEach(r => showMessage(parentId, r))
+      })
+      .catch(err => {
+        alert(`Could not read messages from ${parentId} '${serviceName}'! err=${err.name}, ${err.message}}`)
+      });
   }
 
   // Get data from server and display
   clearContents();
   if (serviceType !== 'standard') {
-    dim(['client', 'clientName','queue', 'queueName'], false);
+    dim(['clientHead', 'client', 'clientName','queue', 'queueName'], false);
 
     // Get and show items from remoteService
     displayRows('server', app.service(serviceName).remote);
@@ -168,14 +179,13 @@ function getServiceData() {
   }
   else {
     // LocalService and localQueue are not relevant for 'standard' so we dim them
-    dim(['client', 'clientName','queue', 'queueName'], true);
+    dim(['clientHead', 'client', 'clientName','queue', 'queueName'], true);
 
     // Get and show items from remoteService (in this case the ordinary service)
     displayRows('server', app.service(serviceName));
   }
 
 };
-getServiceData(); // Get data at load/reload
 
 
 function removeHandler (parentId, message, cls) {
@@ -222,26 +232,34 @@ function removeListeners (app, service, elId) {
 //==============================
 
 // Some message display formatting
-function formatDate (date) { // Only show the time portion of the ISO date
-  return date.length > 10 ? date.substr(11,12) : date;
+function formatDate(date) { // Only show the time portion of the ISO date
+  let thisDate = typeof date === 'object' ? date.toISOString() : date;
+  return thisDate.length > 10 ? thisDate.substr(11,12) : thisDate;
 }
 
 function formatMessage (res) {
   let message = res.arg1 || res;
-  return `${message.uuid}: ${formatDate(message.updatedAt)}, ${formatDate(message.onServerAt)}, ${message.text}`;
+
+  return `${message.uuid.padEnd(12,' ')}${formatDate(message.updatedAt).padEnd(14,' ')}${formatDate(message.onServerAt).padEnd(14,' ')}${message.text}`/*.replace(/ /g,'&nbsp;')*/;
 }
 
 // Show a message in message window
-function showMessage (id, message, change = 'green') {
-  let res =  getRecord(id, message);
+function showMessage(id, message, change = 'green') {
+  let res = getRecord(id, message);
   fodebug(`showMessage('${id}', '${JSON.stringify(res)}', '${change}')`);
-  let node = document.createElement('DIV');
   let nodeId = getNodeId(id, message);
-  let textNode = document.createTextNode(formatMessage(res));
-  node.appendChild(textNode);
-  node.setAttribute("id", nodeId);
-  node.setAttribute("onclick", `handleElementClick('${nodeId}',${id === 'client' || (serviceType === 'standard' && id === 'server')})`);
-  document.getElementById(id).appendChild(node);
+  let exists = document.getElementById(nodeId);
+  if (exists) {
+    exists.innerText = formatMessage(res);
+  }
+  else {
+    let node = document.createElement('DIV');
+    let textNode = document.createTextNode(formatMessage(res));
+    node.appendChild(textNode);
+    node.setAttribute("id", nodeId);
+    node.setAttribute("onclick", `handleElementClick('${nodeId}',${id === 'client' || /*(serviceType === 'standard' &&*/ id === 'server'/*)*/})`);
+    document.getElementById(id).appendChild(node);
+  }
   indicateChange(id, message, change);
   document.getElementById(id).scrollTop = 0;
 };
@@ -354,6 +372,7 @@ function handleTypeToggle (ev) {
     serviceType = newType;
     prepareService();
     getServiceData();
+    setSyncButtons();
   }
 };
 
@@ -391,6 +410,7 @@ document.getElementById('speed').addEventListener('click', async ev => {
   speed = document.getElementById(id).value;
 });
 
+
 // Handle the 'Add Message' button
 // eslint-disable-next-line no-unused-vars
 document.getElementById('add').addEventListener('click', async _ev => {
@@ -405,24 +425,16 @@ document.getElementById('add').addEventListener('click', async _ev => {
     });
 });
 
-// Handle the 'Sync' button
-// eslint-disable-next-line no-unused-vars
-document.getElementById('sync').addEventListener('click', async _ev => {
-  fodebug('sync() pressed...');
-  if (typeof app.service(serviceName).sync === 'function') {
-    await app.service(serviceName).sync();
-    fodebug(`Sync performed for '${serviceType}'.`);
-  } else {
-    alert(`Sync is a no-op for '${serviceType}'.`);
-  };
-});
 
-function showPopup () {
+// Handling editing/selecting lines
+function showPopup (type) {
   const el = document.getElementById('overlay');
   el.style.display = 'block';
 
   const text = document.getElementById('text');
   text.focus();
+
+  document.getElementById('olHead').innerText = type;
 
   // Workaround for Safari bug
   // http://stackoverflow.com/questions/1269722/selecting-text-on-focus-using-jquery-not-working-in-safari-and-chrome
@@ -443,23 +455,69 @@ function setInputFieldValue (id, value) {
   }
 }
 
-async function rowUpdate () {
+async function rowUpdate() {
+  const type = document.getElementById('olHead').innerText;
   const uuid = document.getElementById('uuid').value;
   const text = document.getElementById('text').value;
   const updatedAt = document.getElementById('updatedAt').value;
   const onServerAt = document.getElementById('onServerAt').value;
 
-  let res = await app.service(serviceName).patch(uuid, { text, updatedAt, onServerAt });
+  if (type === 'server') {
+    let hndl = app.service(serviceName);
+    if (hndl.remote) {
+      let doOne = confirm('Do you want only want to update on server(remote)?');
+
+      if (doOne) {
+        await hndl.remote.patch(uuid, { text, updatedAt, onServerAt });
+      }
+      else {
+        await hndl.patch(uuid, { text, updatedAt, onServerAt });
+      }
+    }
+    else {
+      await hndl.patch(uuid, { text, updatedAt, onServerAt });
+    }
+  }
+  else if (type === 'client') {
+    let doOne = confirm('Do you want only want to update on client(local)?');
+
+    if (doOne) {
+      await app.service(serviceName).local.patch(uuid, { text, updatedAt, onServerAt });
+    }
+    else {
+      await app.service(serviceName).patch(uuid, { text, updatedAt, onServerAt });
+    }
+  }
 }
 
 async function rowDelete  () {
+  const type = document.getElementById('olHead').innerText;
   const uuid = document.getElementById('uuid').value;
 
-  let res = await app.service(serviceName).remove(uuid);
+  if (type === 'server') {
+    let hndl = app.service(serviceName);
+    if (hndl.remote) {
+      let doOne = confirm('Do you want only want to delete on server(remote)?');
+
+      if (doOne) {
+        await hndl.remote.remove(uuid);
+      }
+      else {
+        await hndl.remove(uuid);
+      }
+    }
+    else {
+      await app.service(serviceName).remove(uuid);
+    }
+  }
+  else if (type === 'client') {
+    await app.service(serviceName).local.remove(uuid);
+  }
 }
 
 async function handleElementClick (elId, updatesAllowed = false) {
   const ix = elId.indexOf('-');
+  const type = elId.substring(0, ix);
   let uuid = elId.substring(ix+1);
   if (elId.includes('queue')) {
     const ix2 = elId.lastIndexOf('-');
@@ -476,7 +534,7 @@ async function handleElementClick (elId, updatesAllowed = false) {
         document.getElementById('delete').style.display = 'none';
         document.getElementById('update').style.display = 'none';
       }
-      showPopup();
+      showPopup(type);
     })
     .catch(err => {
       if (elId.includes('queue-')) {
@@ -487,20 +545,89 @@ async function handleElementClick (elId, updatesAllowed = false) {
     })
 }
 
-async function resetAll() {
-  alert("You are about to delete all data and stated - are you sure?");
-  sessionStorage.setItem(localServiceName, "{}");
-  sessionStorage.setItem(localQueueName, "{}");
 
-  let remote = app.service(serviceName).remote || app.service(serviceName);
-  await remote.find()
-    .then(async res => {
-      let arr = [];
-      res.forEach(r => arr.push(remote.remove(r['uuid'])));
-      await Promise.all(arr);
-    })
-    .catch(err => {
-      alert(`Could not delete rows from server(/remote), err.name=${err.name}, err.message=${err.message}`);
-    })
-  location.reload();
+// Handle 'Reset All' button
+async function resetAll() {
+  if (serviceType === 'standard') {
+    let bOnlySome = confirm('To be able to delete local data you must be in an Offline realtime mode - continue?');
+    if (!bOnlySome) return
+  }
+
+  let bDeleteIt = confirm("You are about to delete all data and state - are you sure?");
+  
+  if (bDeleteIt) {
+    let local = app.service(serviceName).local;
+    if (local) {
+      await local.find()
+        .then(async res => {
+          await Promise.all([ res.forEach(r => local.remove(r[local.id])) ]);
+        })
+        .catch(err => {
+          alert(`Could not delete rows from local, err.name=${err.name}, err.message=${err.message}`);
+        })
+    }
+    let queue = app.service(serviceName).queue;
+    if (queue) {
+      await queue.find()
+        .then(async res => {
+          await Promise.all([ res.forEach(r => queue.remove(r['id'])) ]);
+        })
+        .catch(err => {
+          alert(`Could not delete rows from queue, err.name=${err.name}, err.message=${err.message}`);
+        })
+    }
+    if (local) { // A hack - for now
+      let syncTxt = localStorage.getItem('feathersjs-offline/@@@syncedAt@@@/1');
+      let synced = JSON.parse(syncTxt);
+      synced.value = "1970-01-01T00:00:00.000Z";
+      localStorage.setItem('feathersjs-offline/@@@syncedAt@@@/1', JSON.stringify(synced));
+    }
+
+    let remote = app.service(serviceName).remote;
+    let query = remote ? { force: true } : {};
+    remote = remote || app.service(serviceName);
+    const myId = 'uuid'; /* remote.id; */
+    await remote.find({ query })
+      .then(async res => {
+        await Promise.all([res.forEach(r => remote.remove(r[myId], { query }))]);
+      })
+      .catch(err => {
+        alert(`Could not delete rows from server(/remote), err.name=${err.name}, err.message=${err.message}`);
+      })
+
+    // location.reload();
+  }
+}
+
+
+// Handle the 'Sync' and 'SyncAll' buttons
+// eslint-disable-next-line no-unused-vars
+
+const syncButton = async _ev => {
+  fodebug('sync() pressed...');
+  if (typeof app.service(serviceName).sync === 'function') {
+    await app.service(serviceName).sync(false);
+    fodebug(`Sync(false) performed for '${serviceType}'.`);
+  };
+}
+
+const syncAllButton = async _ev => {
+  fodebug('syncAll() pressed...');
+  if (typeof app.service(serviceName).sync === 'function') {
+    await app.service(serviceName).sync(true);
+    fodebug(`Sync(true) performed for '${serviceType}'.`);
+  };
+};
+
+function setSyncButtons() {
+  const enableButton = serviceType !== 'standard';
+
+  if (enableButton) {
+    document.getElementById('sync').addEventListener('click', syncButton);
+    document.getElementById('syncAll').addEventListener('click', syncAllButton);
+  }
+  else {
+    document.getElementById('sync').removeEventListener('click', syncButton);
+    document.getElementById('syncAll').removeEventListener('click', syncAllButton);
+  }
 }

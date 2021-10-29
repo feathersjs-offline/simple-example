@@ -1,1 +1,0 @@
-../../offline-first/owndata-ownnet.save/packages/client/dist/feathersjs-offline-client.js

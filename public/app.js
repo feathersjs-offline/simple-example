@@ -1,4 +1,6 @@
-let DEBUG = false;
+// The `simple-example` application file
+
+let DEBUG = false; // Set this to true if you want a chatty application...
 const fodebug= (...args) => {if (DEBUG) console.log(...args)};
 
 // Make sure the feathersjs-offline wrappers for own-data, own-net, and server are available
@@ -67,17 +69,18 @@ const serviceWrapper = {
   'ownnet': feathersjsOfflineClient.ownnetWrapper
 }
 
+// Determine wanted storage ('localStorage' is use as default if none is specified)
 const validStorage = ['websql', 'indexeddb', 'localstorage'];
 
 let regex = new RegExp('[?&]db=([^&#]*)|&|#|$');
-let dbs = (regex.exec(window.location.href))[1].split(',');
+let dbs = regex.exec(window.location.href);
+dbs = dbs[1] ? dbs[1].split(','): [];
 
-const ok = dbs.reduce((total, db) => {
-  total += validStorage.includes(db.toLowerCase()) ? 1 : 0;
-  return total;
-}, 0);
-if (ok !== dbs.length)
+const ok = dbs.reduce((value, db) => value && validStorage.includes(db.toLowerCase()), true);
+if (!ok)
   alert(`Unknown storage type specified in url search parameter:\n\n'${ioLocation}/?db=${dbs.join(',')}'\n\nPlease use one (or more) of 'websql', 'indexeddb', or 'localstorage' (separate with comma).`);
+
+if (!dbs.length) dbs = null;
 
 // Setup service according to users choice
 async function prepareService () {

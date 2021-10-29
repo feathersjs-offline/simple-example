@@ -14,10 +14,7 @@ module.exports = {
     all: [],
     find: [],
     get: [],
-    create: [context => {
-      console.log(`after create data = ${JSON.stringify(context.result)}`);
-      return context;
-    }],
+    create: [],
     update: [],
     patch: [],
     remove: []

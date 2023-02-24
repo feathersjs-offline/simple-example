@@ -48,7 +48,7 @@
     "@feathersjs-offline/server": "^2.0.0",
     "@feathersjs/adapter-commons": "^4.5.11",
     "@feathersjs/configuration": "^4.5.11",
-    "@feathersjs/errors": "^4.5.11",
+    "@feathersjs/errors": "^5.0.0",
     "@feathersjs/express": "^4.5.11",
     "@feathersjs/feathers": "^4.5.11",
     "@feathersjs/socketio": "^4.5.11",
